@@ -1,0 +1,32 @@
+{
+  "name": "@nitra/crawler",
+  "version": "1.0.3",
+  "description": "puppeteer crawler",
+  "main": "index.js",
+  "scripts": {
+    "fix": "standard --fix",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitra/crawler.git"
+  },
+  "keywords": [
+    "puppeteer",
+    "crawler"
+  ],
+  "author": "nitra",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nitra/crawler/issues"
+  },
+  "homepage": "https://github.com/nitra/crawler#readme",
+  "dependencies": {
+    "loglevel-colored-level-prefix": "^1.0.0",
+    "node-fetch": "^2.6.0",
+    "puppeteer": "^1.19.0"
+  },
+  "devDependencies": {
+    "standard": "^14.1.0"
+  }
+}
