@@ -8,6 +8,9 @@ const log = require('loglevel-colored-level-prefix')()
 const fetch = require('node-fetch')
 const puppeteer = require('puppeteer')
 
+const catchedErrors = []
+const mapLinks = new Map()
+
 // TODO: respect robots.txt
 // https://www.promptcloud.com/blog/how-to-read-and-respect-robots-file/
 
@@ -15,6 +18,8 @@ const puppeteer = require('puppeteer')
  * Кравлер
  * @param {String} target - Стартова сторінка
  * @param {Number} waitSeconds - Пауза між скануваннями сторінок в мілісекундах
+ * 
+ * @return {Promise<Array>} Список знайдених помилок
  */
 async function crawl (target, waitSeconds = 0) {
   const host = new URL(target).host
@@ -22,10 +27,8 @@ async function crawl (target, waitSeconds = 0) {
     throw new Error(`not valid url: ${target}`)
   }
 
-  const mapLinks = new Map()
   const externalLinks = new Set()
   const visitedUrls = new Set()
-  const catchedErrors = []
 
   // Додаємо в список урл для аналізу - першу сторінку
   mapLinks.set(target, 'start')
@@ -171,20 +174,16 @@ async function crawl (target, waitSeconds = 0) {
   }
 
   // Якщо є зовнішні посилання на перевірку
-  let externalWithError = new Map()
   if (externalLinks.size > 0) {
     try {
-      externalWithError = await externalCheck(externalLinks)
+      // Результат записується в catchedErrors
+      await externalCheck(externalLinks)
     } catch (err) {
       log.error(err)
     }
   }
 
-  // Завершаємо з 1 для CI
-  if (catchedErrors.length > 0 || externalWithError.size > 0) {
-    log.error(catchedErrors, externalWithError)
-    process.exit(1)
-  }
+  return catchedErrors
 }
 
 /**
@@ -208,23 +207,23 @@ function nonVisitedUrl (visitedUrls, mapLinks) {
  * Перевірка посилань на доступність
  *
  * @param {Set} externalLinks - Набір посилань для перевірки
- * @return {Promise<Map>} Ключ посилання, значення статус відповіді
  */
 async function externalCheck (externalLinks) {
-  const linksWithError = new Map()
-
   for (const link of externalLinks) {
     // @ts-ignore
     const getExternal = await fetch(link)
 
     if (getExternal.status > 403) {
-      linksWithError.set(link, getExternal.status)
+      catchedErrors.push({
+        type: 'externalCheck',
+        text: `code is: ${getExternal.status}`,
+        url: link,
+        name: mapLinks.get(link)
+      })
     }
 
     log.debug(`get resopnse code: ${getExternal.status} for external: ${link}`)
   }
-
-  return linksWithError
 }
 
 // Export it to make it available outside
