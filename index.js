@@ -27,7 +27,7 @@ async function crawl (target, waitSeconds = 0) {
     throw new Error(`not valid url: ${target}`)
   }
 
-  const externalLinks = new Set()
+  const externalLinks = new Map()
   const visitedUrls = new Set()
 
   // Додаємо в список урл для аналізу - першу сторінку
@@ -156,7 +156,7 @@ async function crawl (target, waitSeconds = 0) {
         // 3. ті, які не ссилаються на аналізуємий домен
         // перевіряємо що не 404, 50х
         if (pLink.host !== host) {
-          externalLinks.add(href)
+          externalLinks.set(href, `${target} -> ${link.text}`)
           log.debug(`External link: ${href}`)
           continue
         }
@@ -206,10 +206,10 @@ function nonVisitedUrl (visitedUrls, mapLinks) {
 /**
  * Перевірка посилань на доступність
  *
- * @param {Set} externalLinks - Набір посилань для перевірки
+ * @param {Map} externalLinks - Набір посилань для перевірки
  */
 async function externalCheck (externalLinks) {
-  for (const link of externalLinks) {
+  for (const [link, name] of externalLinks) {
     // @ts-ignore
     const getExternal = await fetch(link)
 
@@ -218,7 +218,7 @@ async function externalCheck (externalLinks) {
         type: 'externalCheck',
         text: `code is: ${getExternal.status}`,
         url: link,
-        name: mapLinks.get(link)
+        name: name
       })
     }
 
