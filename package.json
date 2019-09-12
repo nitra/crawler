@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "fix": "standard --fix",
+    "publ": "npm publish --access public",
     "test": "jest"
   },
   "repository": {
