@@ -18,10 +18,11 @@ const mapLinks = new Map()
  * Кравлер
  * @param {String} target - Стартова сторінка
  * @param {Number} waitSeconds - Пауза між скануваннями сторінок в мілісекундах
- * 
+ * @param {Number} limit - Не більше заданої кількості сторінок сканувати
+ *
  * @return {Promise<Array>} Список знайдених помилок
  */
-async function crawl (target, waitSeconds = 0) {
+async function crawl (target, waitSeconds = 0, limit = 1000) {
   const host = new URL(target).host
   if (!host) {
     throw new Error(`not valid url: ${target}`)
@@ -69,10 +70,10 @@ async function crawl (target, waitSeconds = 0) {
   })
 
   try {
-  // Якщо є наступна сторінка для сканування, та не перевищили ліміт 1000 сторінок
+  // Якщо є наступна сторінка для сканування, та не перевищили ліміт (за умовчанням 1000 сторінок)
     let i = 1
     while (
-      visitedUrls.size < 1000 &&
+      visitedUrls.size < limit &&
     (target = nonVisitedUrl(visitedUrls, mapLinks))
     ) {
       log.debug(`Page ${i++} : ${target} "${mapLinks.get(target)}"`)
@@ -191,16 +192,22 @@ async function crawl (target, waitSeconds = 0) {
  *
  * @param {Set} visitedUrls - Набір посилань які вже відвідали
  * @param {Map} mapLinks - Знайдені на сторінкі посилання
- * 
+ *
  * @return {String} Сторінка яку ще не відвідали, а треба відвідати
  */
 function nonVisitedUrl (visitedUrls, mapLinks) {
+  const nonVisitedUrls = []
   for (const key of mapLinks.keys()) {
     if (!visitedUrls.has(key)) {
-      return key
+      nonVisitedUrls.push(key)
     }
   }
-  return null
+  if (nonVisitedUrls.length === 0) {
+    return null
+  }
+
+  // Випадкове посилання зі списку
+  return nonVisitedUrls[Math.floor(Math.random() * nonVisitedUrls.length)]
 }
 
 /**
