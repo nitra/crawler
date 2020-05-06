@@ -22,7 +22,7 @@ const mapLinks = new Map()
  *
  * @return {Promise<Array>} Список знайдених помилок
  */
-async function crawl (target, waitSeconds = 0, limit = 1000) {
+async function crawl(target, waitSeconds = 0, limit = 1000) {
   const host = new URL(target).host
   if (!host) {
     throw new Error(`not valid url: ${target}`)
@@ -70,11 +70,11 @@ async function crawl (target, waitSeconds = 0, limit = 1000) {
   })
 
   try {
-  // Якщо є наступна сторінка для сканування, та не перевищили ліміт (за умовчанням 1000 сторінок)
+    // Якщо є наступна сторінка для сканування, та не перевищили ліміт (за умовчанням 1000 сторінок)
     let i = 1
     while (
       visitedUrls.size < limit &&
-    (target = nonVisitedUrl(visitedUrls, mapLinks))
+      (target = nonVisitedUrl(visitedUrls, mapLinks))
     ) {
       log.debug(`Page ${i++} : ${target} "${mapLinks.get(target)}"`)
       visitedUrls.add(target)
@@ -92,7 +92,7 @@ async function crawl (target, waitSeconds = 0, limit = 1000) {
           waitUntil: 'networkidle2'
         })
       } catch (err) {
-      // Якщо в якості урл, йде завантаження файлу. то йдему на наступну сторінку
+        // Якщо в якості урл, йде завантаження файлу. то йдему на наступну сторінку
         log.debug(err)
         continue
       }
@@ -114,7 +114,7 @@ async function crawl (target, waitSeconds = 0, limit = 1000) {
 
       // Find all links
       const linksArray = await page.evaluate(() => {
-      // все ссылки на странице формируем в массив обьектов с href и текстом ссылки
+        // все ссылки на странице формируем в массив обьектов с href и текстом ссылки
         const linksArray = Array.from(document.querySelectorAll('a')).map(
           link => {
             return { href: link.href, text: link.text.trim() }
@@ -123,8 +123,8 @@ async function crawl (target, waitSeconds = 0, limit = 1000) {
 
         // добавляем в массив ссылок meta с отложенным редиректом если есть (<meta http-equiv="refresh" content="55; url=http://nitra.github.io/ru" />)
         /**
-       * @type {HTMLMetaElement}
-       */
+         * @type {HTMLMetaElement}
+         */
         const meta = document.querySelector('meta[http-equiv=refresh]')
         if (meta && meta.content) {
           linksArray.push({
@@ -138,7 +138,7 @@ async function crawl (target, waitSeconds = 0, limit = 1000) {
 
       // Готовим ссылки для дальнейшей записи:
       for (const link of linksArray) {
-      // 1. отрезаем якоря из ссылки https://nitra.ai/#scanner => https://nitra.ai/
+        // 1. отрезаем якоря из ссылки https://nitra.ai/#scanner => https://nitra.ai/
         let href = link.href
         if (href.indexOf('#') !== -1) {
           href = href.substr(0, href.indexOf('#'))
@@ -195,7 +195,7 @@ async function crawl (target, waitSeconds = 0, limit = 1000) {
  *
  * @return {String} Сторінка яку ще не відвідали, а треба відвідати
  */
-function nonVisitedUrl (visitedUrls, mapLinks) {
+function nonVisitedUrl(visitedUrls, mapLinks) {
   const nonVisitedUrls = []
   for (const key of mapLinks.keys()) {
     if (!visitedUrls.has(key)) {
@@ -215,21 +215,29 @@ function nonVisitedUrl (visitedUrls, mapLinks) {
  *
  * @param {Map} externalLinks - Набір посилань для перевірки
  */
-async function externalCheck (externalLinks) {
+async function externalCheck(externalLinks) {
   for (const [link, name] of externalLinks) {
-    // @ts-ignore
-    const getExternal = await fetch(link)
-
-    if (getExternal.status > 403) {
-      catchedErrors.push({
-        type: 'externalCheck',
-        text: `code is: ${getExternal.status}`,
-        url: link,
-        name: name
-      })
+    const catchedError = {
+      type: 'externalCheck',
+      url: link,
+      name: name
     }
+    try {
+      // @ts-ignore
+      const getExternal = await fetch(link)
 
-    log.debug(`get resopnse code: ${getExternal.status} for external: ${link}`)
+      if (getExternal.status > 403) {
+        catchedError.text = `code is: ${getExternal.status}`
+        catchedErrors.push(catchedError)
+      }
+
+      log.debug(catchedError)
+    } catch (err) {
+      catchedError.text = err.message
+      catchedErrors.push(catchedError)
+
+      log.debug(catchedError)
+    }
   }
 }
 
